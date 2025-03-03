@@ -11,35 +11,4 @@
 .DS_Store
 .quarto
 
-#no data
-*.csv
-*.gz
-*.txt
-*.rds
-*.xlsx
-*.xls
-*.zip
-*.png
-*.pptx
-*.tfl
-*.twb
-*.twbx
-*.tbs
-*.tbm
-*.hyper
-*.sql
-*.parquet
-*.svg
-*.dfx
-*.json
-*.dta
-*.shp
-*.dbf
 
-#nothing from these folders
-AI/*
-GIS/*
-Images/*
-Graphics/*
-Data/*
-Dataout/*
