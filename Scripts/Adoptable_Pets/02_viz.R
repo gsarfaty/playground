@@ -101,7 +101,8 @@ breeds <- df_data %>%
   )) %>% 
   count(breed_cat) %>% 
   mutate(Percent = round(n / sum(n) * 100)) %>% 
-  arrange(desc(breed_cat))
+  arrange(desc(breed_cat)) %>% 
+  mutate(label_y = round((cumsum(Percent) - (Percent / 2)) / 10, 0)) 
 
 
 waffle_data <- setNames(breeds$Percent, breeds$breed_cat)
@@ -117,7 +118,11 @@ waffle<-breeds %>%
   scale_fill_manual(values = custom_colors) +
   coord_equal() +  # Ensures grid stays square
   si_style_nolines()+
-  labs(title = "70% OF AVAILABLE DOGS ARE <span style='color:#627CCB;'><b>PIT MIXES</b></span>",
+  annotate("text", x = 0.65, y = breeds$label_y, 
+           label = breeds$breed_cat,
+           color = "black", size =3.5, hjust = "left", family="Source Sans Pro")+
+  labs(x=NULL, y=NULL,
+       title = "70% OF AVAILABLE DOGS ARE <span style='color:#627CCB;'><b>PIT MIXES</b></span>",
        caption = "Source: Montgomery County Animal Services | Accessed 3/2/25")+
   theme(legend.position = "none",
         axis.text.x = element_blank(),
@@ -131,3 +136,48 @@ si_save("Images/MD_County_AdoptablePets_DOG_BREEDs.png")
 
 
 # How old are most dogs available?
+
+dog_age<-df_data %>% 
+  clean_names() %>% 
+  filter(animal_type=="DOG") %>%
+  # age column has numeric and text, along with multiple units; must tidy it!
+  mutate(
+    years = as.numeric(str_extract(pet_age, "\\d+(?=\\s*YEARS?|\\s*YEAR)")),
+    months = as.numeric(str_extract(pet_age, "\\d+(?=\\s*MONTHS?|\\s*MONTH)")),
+    years = replace_na(years, 0),
+    months = replace_na(months, 0),
+    total_months = years * 12 + months,
+    total_years = years + months / 12,
+    # collapse breeds
+    breed_cat = case_when(
+      str_detect(breed, "PIT BULL") ~ "PIT OR PIT MIX",
+      str_detect(breed, "HUSKY") ~ "HUSKY MIX",
+      str_detect(breed, "BOXER") ~ "BOXER MIX",
+      TRUE ~ "OTHER BREEDS"
+    )) %>%
+  select(breed_cat,pet_age,years, months, total_months, total_years) %>% 
+  group_by(breed_cat) %>% 
+  mutate(mean_OVR=mean(total_years)) %>% 
+  ungroup() %>% 
+  arrange(desc(mean_OVR)) %>% 
+  ggplot(aes(x=total_years, 
+             y=reorder(breed_cat,mean_OVR), 
+             color=breed_cat,
+             fill=breed_cat))+
+  geom_boxplot(alpha=0.3)+
+  # geom_jitter(alpha=0.3)+
+  # coord_flip()+
+  scale_fill_manual(values=si_palettes$hemsworth)+
+  scale_color_manual(values=si_palettes$hemsworth)+
+  si_style_xgrid()+
+  labs(x="Age in Years", y=NULL,
+       title = "ADOPTABLE DOGS ARE AN AVERAGE OF 3 YEARS OLD",
+       caption = "Source: Montgomery County Animal Services | Accessed 3/2/25")+
+  theme(
+    legend.position = "none",
+    plot.title = element_markdown() 
+  )
+
+print(dog_age)
+
+si_save("Images/MD_County_AdoptablePets_DOG AGES_BoxPlot.png")
